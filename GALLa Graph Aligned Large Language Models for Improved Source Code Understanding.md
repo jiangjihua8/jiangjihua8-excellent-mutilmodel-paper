@@ -101,7 +101,7 @@ GNN可以选 DUPLEX、MagNet等，支持有向图。
 
 * 使用 Cross Attention 将 GNN 输出投影进 LLM 的嵌入空间。
 * Learnable Queries \$Q \in \mathbb{R}^{n\_g \times d\_{\text{lm}}}\$
-
+Q 是一组固定数量、可学习的向量（如 4 个），每个代表一个提问角度，模型通过这些 Query 对图结构（由 GNN 编码）做 cross attention，从而提炼出若干“图 token”供 LLM 使用。
 **公式**：
 
 $$
