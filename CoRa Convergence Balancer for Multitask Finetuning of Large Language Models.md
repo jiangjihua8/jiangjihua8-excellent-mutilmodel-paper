@@ -1,4 +1,4 @@
-非常好，我们现在就像研究生导师带你逐步深入理解论文《CoBa: Convergence Balancer for Multitask Finetuning of Large Language Models》，从原理、改进点到公式推导和 PyTorch 实现，一步步来，最终帮助你能够讲清楚并运用这篇工作。
+论文《CoBa: Convergence Balancer for Multitask Finetuning of Large Language Models》
 
 ---
 
@@ -163,6 +163,3 @@ def combine_weights(rcs, acs, df):
 4. **优势对比**：与FAMO、GradNorm相比，性能好，计算开销低，适合LLM。
 5. **结果与价值**：在多个多任务场景中显著提升性能，尤其适合低资源任务场景。
 
----
-
-如果你希望我用你的任务数据或模型架构来逐步构建 PyTorch 实现或结构图，我也可以陪你一起做，咱们一步步来。你现在最想深入哪一块？公式推导、代码细化、训练过程实现、图解动图还是讲稿练习？
