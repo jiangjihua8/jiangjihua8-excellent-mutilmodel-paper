@@ -1,5 +1,3 @@
-##AI总结：
-
 这篇论文《GALLa: Graph Aligned Large Language Models for Improved Source Code Understanding》的核心内容
 
 ---
@@ -156,13 +154,11 @@ class GALLaModel(nn.Module):
 
 ## 6️⃣ 通俗比喻：为什么有效？
 
-你可以这样讲：
-
 > 想象一个程序员学习语言（Python），但不懂语法树。他可以靠“经验”写代码，但很容易出错。GALLa像是给他上了一门“数据结构导论”的课程，让他学会函数、变量的结构关系，之后他写代码就有章法了。
 
 ---
 
-## ✅ 你能讲出来的提纲（5分钟）
+## ✅ 提纲
 
 1. 编程语言有结构语义（AST、DFG）——但LLMs只学文本
 2. GALLa创新之处：**不改模型结构**，用GNN+Adapter做“结构对齐”
