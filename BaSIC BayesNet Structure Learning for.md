@@ -1,4 +1,4 @@
-太好了，你愿意深入理解这篇论文《BaSIC: BayesNet Structure Learning for Computational Scalable Neural Image Compression》是一个非常好的决定。这是一个涉及神经图像压缩、贝叶斯网络结构学习、可伸缩计算控制的交叉课题。我们将按以下路径进行引导，像导师带研究生一样逐步带你从入门到可以讲清楚这篇论文：
+这篇论文《BaSIC: BayesNet Structure Learning for Computational Scalable Neural Image Compression》是一个非常好的决定。这是一个涉及神经图像压缩、贝叶斯网络结构学习、可伸缩计算控制的交叉课题。
 
 ---
 
@@ -180,6 +180,3 @@ $$
 * 能实现一个基于 BaSIC 思想的 NIC 框架
 * 可以讲清楚它与 SlimCAE、ELIC 等方法的区别与优劣
 
----
-
-如果你愿意，我们可以 **逐阶段推进**：每次学习一块，配合公式解释 + 图示 + PyTorch 代码 + 通俗类比。现在我们从第一个阶段——背景与动机，开始还是你想直接从公式原理部分进阶？
