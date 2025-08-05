@@ -358,6 +358,165 @@ $$
 
 ---
 
+太好了！那我们现在就深入讲解 BaSIC 中 **如何学习 Inter-node 的贝叶斯结构**，也就是：
+
+> 🔧 学习“模块之间的连接方式 + 复杂度选择”，让模型根据任务自动决定用“重模型”还是“轻模型”。
+
+---
+
+# 🧠 回顾：什么是 Inter-node BayesNet？
+
+---
+
+## ✅ 定义
+
+* 表示“模块之间”的结构，例如从 `z → y → x` 的各个神经网络模块。
+* 每条边不仅代表**谁依赖谁**，还控制：**这个依赖用什么复杂度来实现？**
+
+---
+
+## 📦 类比：模块选择 = 工厂选工人
+
+比如你要盖房子（图像压缩），不同工序之间是有依赖的（基础 → 墙体 → 装修）。
+
+每步工序都可以雇不同水平的工人（复杂度高 or 低）：
+
+* 有快但粗糙的工人（48通道的小模型）
+* 有慢但精准的专家（192通道的大模型）
+
+贝叶斯网络学习的就是：**选哪种工人来连接每两步之间的传递**。
+
+---
+
+# 📊 数学公式 + 图示解释
+
+---
+
+## ✳️ 1. 图结构的建模
+
+我们关注一条典型边，比如：
+
+```
+z ──→ y
+```
+
+在普通网络中，这只是一个固定的神经网络模块，比如：
+
+```python
+y = f(z)
+```
+
+而在 BaSIC 中，它是一个多选一结构：
+
+$$
+p(y | z, G_{\text{inter}}^{y,z}) = \sum_{n=1}^{N} \hat{G}_{n} \cdot p_n(y | z)
+$$
+
+其中：
+
+* $p_n(y | z)$：第 n 个候选神经网络（不同通道数）
+* $\hat{G}_n$：使用 Gumbel-softmax 采样得到的 one-hot 向量，表示选择第几条边
+* $G_{\text{inter}}$：整个 Inter-node 结构图，是这些边的集合
+
+---
+
+## 🧪 2. 代码示例（PyTorch Gumbel-softmax）
+
+```python
+import torch
+import torch.nn.functional as F
+import torch.nn as nn
+
+class InterNodeChoice(nn.Module):
+    def __init__(self, in_channels, out_channels, candidates=[48, 72, 96, 144, 192]):
+        super().__init__()
+        self.candidates = nn.ModuleList([
+            nn.Sequential(
+                nn.Conv2d(in_channels, c, 3, padding=1),
+                nn.ReLU(),
+                nn.Conv2d(c, out_channels, 3, padding=1)
+            ) for c in candidates
+        ])
+        self.logits = nn.Parameter(torch.randn(len(candidates)))
+
+    def forward(self, z, tau=1.0):
+        # 1. 用 Gumbel-softmax 生成 one-hot 概率向量
+        probs = F.gumbel_softmax(self.logits, tau=tau, hard=True)  # [N] one-hot
+
+        # 2. 把每个模块都算出来
+        outputs = [net(z) for net in self.candidates]  # [N] tensors
+
+        # 3. 加权平均 = 选择那条边
+        y = sum(p * out for p, out in zip(probs, outputs))
+        return y
+```
+
+这样我们就实现了“选择一条通道数”的边结构！而且这个选择过程是**可微分的**，可以**放进训练里联合优化**。
+
+---
+
+## 🔄 3. 图结构的优化目标
+
+在 BaSIC 中，我们的优化目标是这样的：
+
+$$
+\mathcal{L} = \underbrace{L_R}_{\text{比特率}} + \lambda_D \underbrace{L_D}_{\text{失真}} + \lambda_C \underbrace{L_C}_{\text{复杂度}}
+$$
+
+其中复杂度部分：
+
+$$
+L_C(G_{\text{inter}}) = \sum_n \hat{G}_n \cdot C(p_n)
+$$
+
+也就是说，你选择了哪个模块，复杂度就是那个模块的 FLOPs 或参数量。
+
+→ 所以训练时，模型会权衡：
+
+* 选个重模型压得好（低失真）但贵（高计算）
+* 选个轻模型省资源，但可能压差一点
+
+---
+
+# 🖼️ 图示（结构图）
+
+```
+ z
+ ↓         ↓          ↓
+[conv48] [conv96] [conv192] ← 3个不同复杂度的子网络
+ ↓         ↓          ↓
+      选择一个（Gumbel）
+         ↓
+         y
+```
+
+你可以理解为：模型在每一层的“结构连接”上都可以做选择，而这些选择是通过 Gumbel-softmax 在训练时学出来的。
+
+---
+
+## ✅ 优势
+
+| 特性   | 解释                                |
+| ---- | --------------------------------- |
+| 灵活性  | 每个连接都可以单独选择不同复杂度                  |
+| 可微分  | 用 Gumbel-softmax 实现 end-to-end 训练 |
+| 控制计算 | 可以对 FLOPs 加权惩罚，实现自动化压缩调节          |
+
+---
+
+## 📌 总结一页表
+
+| 项目   | 含义                             |
+| ---- | ------------------------------ |
+| 边的选择 | 模拟不同复杂度的神经网络模块                 |
+| 表达形式 | Categorical 分布（Gumbel-softmax） |
+| 可微优化 | 使用 Gumbel-softmax，联合训练         |
+| 控制目标 | FLOPs, latency, energy 皆可      |
+| 实际收益 | 部署时可根据设备算力切换网络路径               |
+
+---
+
+
 ## 🔬 第四阶段：PyTorch 代码练习与实战
 
 我会帮你写出一版：
@@ -375,4 +534,5 @@ $$
 * 用贝叶斯结构学习思想设计可伸缩神经网络压缩器
 * 能实现一个基于 BaSIC 思想的 NIC 框架
 * 可以讲清楚它与 SlimCAE、ELIC 等方法的区别与优劣
+
 
